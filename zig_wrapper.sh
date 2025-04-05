@@ -14,7 +14,7 @@ ld.lld | *ld.lld | ld | *-ld) exec ${ZIG_EXE} ld.lld "$@" ;;
 rc) exec $ZIG_EXE rc "$@" ;;
 strip | *-strip)
 	tmpfile="$1$(mktemp -d --dry-run .strip.XXXX)"
-	zig objcopy --strip-all "$1" "${tmpfile}"
+	zig objcopy -S "$1" "${tmpfile}"
 	exec mv "${tmpfile}" "$1"
 	;;
 *cc | *c++)

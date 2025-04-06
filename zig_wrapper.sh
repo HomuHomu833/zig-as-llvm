@@ -15,7 +15,7 @@ rc) exec $ZIG_EXE rc "$@" ;;
 strip | *-strip)
 	tmpfile="$1$(mktemp -d --dry-run .strip.XXXX)"
 	zig objcopy -S "$1" "${tmpfile}" || true
-	if [[ $? -eq 0 && -s "$tmpfile" && "$(file -b --mime-type "$tmpfile")" == "application/x-executable" ]]; then
+	if [ $? -eq 0 ] && [ -s "$tmpfile" ] && [ "$(file -b --mime-type "$tmpfile")" = "application/x-executable" ]; then
         	exec mv "$tmpfile" "$file"
         else
                 exec echo "WARNING: unable to strip $file"

@@ -29,9 +29,6 @@ strip | *-strip)
 		esac
 	fi
 
-	# Remove any --target=* argument from the list of arguments
-	set -- $(echo "$@" | sed 's/--target=[^ ]*//g')
-
 	## Zig doesn't properly handle these flags so we have to rewrite/ignore.
 	## None of these affect the actual compilation target.
 	## https://github.com/ziglang/zig/issues/9948
@@ -39,12 +36,12 @@ strip | *-strip)
 		case "${argv}" in
 		-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
 		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,*) ;;
+                --target=*) ;;
 		*) set -- "$@" "${argv}" ;;
 		esac
 		shift
 	done
 
-	# Add the target argument back if necessary, now handled correctly
 	case "${PROGRAM}" in
 	*cc) set -- cc --target="${ZIG_TARGET}" "$@" ;;
 	*c++) set -- c++ --target="${ZIG_TARGET}" "$@" ;;

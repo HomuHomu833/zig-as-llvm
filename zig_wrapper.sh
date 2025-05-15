@@ -2,9 +2,7 @@
 set -eu
 
 PROGRAM="$(basename "$0")"
-if ! test "${ZIG_EXE+1}"; then
-  ZIG_EXE=zig
-fi
+ZIG_EXE=zig
 
 case "${PROGRAM}" in
 ar | *-ar) exec ${ZIG_EXE} ar "$@" ;;

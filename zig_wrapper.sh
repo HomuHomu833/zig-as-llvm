@@ -2,7 +2,7 @@
 set -eu
 
 PROGRAM="$(basename "$0")"
-if [ -z "${ZIG_EXE+x}" ]; then
+if ! test "${ZIG_EXE+1}"; then
   ZIG_EXE=zig
 fi
 

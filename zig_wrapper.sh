@@ -18,7 +18,8 @@ strip | *-strip)
 	if [ $? -eq 0 ] && [ -s "$tmpfile" ] && [ "$(file -b --mime-type "$tmpfile")" = "application/x-executable" ]; then
         	exec mv "$tmpfile" "$1"
         else
-                exec echo "WARNING: unable to strip $1"
+                echo "WARNING: unable to strip $1"
+		exec rm "$tmpfile"
         fi
 	;;
 *cc | *c++)

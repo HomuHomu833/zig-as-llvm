@@ -19,7 +19,7 @@ strip | *-strip)
         	exec mv "${tmpfile}" "$1"
         else
                 echo "WARNING: unable to strip $1"
-		exec rm "${tmpfile}" || true
+		rm "${tmpfile}" || true
         fi
 	;;
 *cc | *c++)

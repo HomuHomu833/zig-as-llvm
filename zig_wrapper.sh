@@ -48,30 +48,37 @@ case "${PROGRAM}" in
 			esac
 		fi
 
+		NEW_ARGS=""
 		## Zig doesn't properly handle these flags so we have to rewrite/ignore.
 		## None of these affect the actual compilation target.
 		## https://github.com/ziglang/zig/issues/9948
-		for argv in "$@"; do
-			case "${argv}" in
-				-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
-				-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) ;;
-				--target=*) ;;
+		while [ $# -gt 0 ]; do
+			case "$1" in
+				-Wp,-MD,*)
+					NEW_ARGS="$NEW_ARGS -MD -MF ${1#-Wp,-MD,}"
+					;;
+				-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) 
+					;;
+				--target=*)
+					;;
 				-target)
 					shift
 					shift
 					continue
 					;;
-				*) set -- "$@" "${argv}" ;;
+				*)
+					NEW_ARGS="$NEW_ARGS $1"
+					;;
 			esac
 			shift
 		done
 
 		case "${PROGRAM}" in
-			*cc) set -- cc --target="${ZIG_TARGET}" "$@" ;;
-			*c++) set -- c++ --target="${ZIG_TARGET}" "$@" ;;
+			*cc) CMD="cc --target=${ZIG_TARGET} $NEW_ARGS" ;;
+			*c++) CMD="c++ --target=${ZIG_TARGET} $NEW_ARGS" ;;
 		esac
 
-		exec ${ZIG_EXE} "${@}"
+		exec ${ZIG_EXE} $CMD
 		;;
 	*)
 		if test -h "$0"; then

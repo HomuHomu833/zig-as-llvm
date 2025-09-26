@@ -39,8 +39,8 @@ strip | *-strip)
 		case "${argv}" in
 		-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
 		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) ;;
-		--target=*) ;;                       # already handled
-        -target\ *) ;;                       # <-- NEW: swallow clang-style -target <triple>
+		--target=*) ;;
+        -target\ *) ;;
         -target=*) ;;
 		*) set -- "$@" "${argv}" ;;
 		esac

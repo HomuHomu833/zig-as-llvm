@@ -38,6 +38,11 @@ strip | *-strip)
 		-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
 		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) ;;
 		--target=*) ;;
+		-target)
+			shift
+			shift
+			continue
+		;;
 		*) set -- "$@" "${argv}" ;;
 		esac
 		shift

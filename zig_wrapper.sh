@@ -16,11 +16,11 @@ strip | *-strip)
 	tmpfile="$1$(mktemp -d --dry-run .strip.XXXX)"
 	zig objcopy -S "$1" "${tmpfile}" || true
 	if [ $? -eq 0 ] && [ -s "${tmpfile}" ] && [ "$(file -b --mime-type "${tmpfile}")" = "application/x-executable" ]; then
-        	exec mv "${tmpfile}" "$1"
-        else
-                echo "WARNING: unable to strip $1"
+        exec mv "${tmpfile}" "$1"
+	else
+		echo "WARNING: unable to strip $1"
 		rm "${tmpfile}" || true
-        fi
+	fi
 	;;
 *cc | *c++)
 	if ! test "${ZIG_TARGET+1}"; then

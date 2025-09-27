@@ -11,9 +11,9 @@ lib | *-lib) exec ${ZIG_EXE} lib "$@" ;;
 ranlib | *-ranlib) exec ${ZIG_EXE} ranlib "$@" ;;
 objcopy | *-objcopy) exec ${ZIG_EXE} objcopy "$@" ;;
 ld.lld | *ld.lld | ld | *-ld) exec ${ZIG_EXE} ld.lld "$@" ;;
-rc) exec ${ZIG_EXE} rc "$@" ;;
+rc) exec $ZIG_EXE rc "$@" ;;
 strip | *-strip)
-    tmpfile="$1$(mktemp -d .strip.XXXXXX)"
+    tmpfile="$1$(mktemp -d --dry-run .strip.XXXX)"
     zig objcopy -S "$1" "${tmpfile}" || true
     if [ $? -eq 0 ] && [ -s "${tmpfile}" ] && \
        [ "$(file -b --mime-type "${tmpfile}")" = "application/x-executable" ]; then
@@ -29,9 +29,8 @@ strip | *-strip)
         exit 127
     fi
 
-    args_tmp=""
+    new_args=""
     skip_next=0
-
     for arg in "$@"; do
         if [ "$skip_next" -eq 1 ]; then
             skip_next=0
@@ -40,7 +39,7 @@ strip | *-strip)
         case "$arg" in
             -Wp,-MD,*)
                 file=$(echo "$arg" | sed 's/^-Wp,-MD,//')
-                args_tmp="$args_tmp§-MD§-MF§$file"
+                new_args="$new_args -MD -MF $file"
                 ;;
             -Wl,--warn-common|-Wl,--verbose|-Wl,-Map,*|-Wl,-sectcreate,*)
                 ;;
@@ -50,25 +49,20 @@ strip | *-strip)
                 skip_next=1
                 ;;
             *)
-                args_tmp="$args_tmp§$arg"
+                new_args="$new_args $arg"
                 ;;
         esac
     done
 
-    set --
-    OLDIFS="$IFS"
-    IFS=§
-    for arg in $args_tmp; do
-        [ -n "$arg" ] && set -- "$@" "$arg"
-    done
-    IFS="$OLDIFS"
+    # shellcheck disable=SC2086
+    set -- $new_args
 
     case "${PROGRAM}" in
         *cc) set -- cc --target="${ZIG_TARGET}" "$@" ;;
         *c++) set -- c++ --target="${ZIG_TARGET}" "$@" ;;
     esac
 
-    exec ${ZIG_EXE} "$@"
+    exec ${ZIG_EXE} "${@}"
     ;;
 *)
     if [ -h "$0" ]; then

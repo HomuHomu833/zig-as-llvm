@@ -38,6 +38,7 @@ strip | *-strip)
 		-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
 		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) ;;
 		--target=*) ;;
+		*-apple-darwin*) set -- "$@" "${ZIG_TARGET}" ;;  
 		*) set -- "$@" "${argv}" ;;
 		esac
 		shift

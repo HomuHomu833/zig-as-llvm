@@ -13,60 +13,46 @@ objcopy | *-objcopy) exec ${ZIG_EXE} objcopy "$@" ;;
 ld.lld | *ld.lld | ld | *-ld) exec ${ZIG_EXE} ld.lld "$@" ;;
 rc) exec $ZIG_EXE rc "$@" ;;
 strip | *-strip)
-    tmpfile="$1$(mktemp -d --dry-run .strip.XXXX)"
-    zig objcopy -S "$1" "${tmpfile}" || true
-    if [ $? -eq 0 ] && [ -s "${tmpfile}" ] && \
-       [ "$(file -b --mime-type "${tmpfile}")" = "application/x-executable" ]; then
-        exec mv "${tmpfile}" "$1"
-    else
-        echo "WARNING: unable to strip $1"
-        rm -f "${tmpfile}" || true
-    fi
-    ;;
-*cc | *c++)
-    if [ -z "${ZIG_TARGET+x}" ]; then
-        echo "ZIG_TARGET is missing."
-        exit 127
-    fi
-
-    new_args=""
-    skip_next=0
-    for arg in "$@"; do
-        if [ "$skip_next" -eq 1 ]; then
-            skip_next=0
-            continue
+	tmpfile="$1$(mktemp -d --dry-run .strip.XXXX)"
+	zig objcopy -S "$1" "${tmpfile}" || true
+	if [ $? -eq 0 ] && [ -s "${tmpfile}" ] && [ "$(file -b --mime-type "${tmpfile}")" = "application/x-executable" ]; then
+        	exec mv "${tmpfile}" "$1"
+        else
+                echo "WARNING: unable to strip $1"
+		rm "${tmpfile}" || true
         fi
-        case "$arg" in
-            -Wp,-MD,*)
-                file=$(echo "$arg" | sed 's/^-Wp,-MD,//')
-                new_args="$new_args -MD -MF $file"
-                ;;
-            -Wl,--warn-common|-Wl,--verbose|-Wl,-Map,*|-Wl,-sectcreate,*)
-                ;;
-            --target=*|-target=*)
-                ;;
-            -target)
-                skip_next=1
-                ;;
-            *)
-                new_args="$new_args $arg"
-                ;;
-        esac
-    done
+	;;
+*cc | *c++)
+	if ! test "${ZIG_TARGET+1}"; then
+		case "${PROGRAM}" in
+		cc | c++) ZIG_TARGET="$(uname -m)-linux-musl" ;;
+		*) ZIG_TARGET=$(echo "${PROGRAM}" | sed -E 's/(.+)(-cc|-c\+\+|-gcc|-g\+\+)/\1/') ;;
+		esac
+	fi
 
-    # shellcheck disable=SC2086
-    set -- $new_args
+	## Zig doesn't properly handle these flags so we have to rewrite/ignore.
+	## None of these affect the actual compilation target.
+	## https://github.com/ziglang/zig/issues/9948
+	for argv in "$@"; do
+		case "${argv}" in
+		-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
+		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) ;;
+		--target=*) ;;
+		*) set -- "$@" "${argv}" ;;
+		esac
+		shift
+	done
 
-    case "${PROGRAM}" in
-        *cc) set -- cc --target="${ZIG_TARGET}" "$@" ;;
-        *c++) set -- c++ --target="${ZIG_TARGET}" "$@" ;;
-    esac
+	case "${PROGRAM}" in
+	*cc) set -- cc --target="${ZIG_TARGET}" "$@" ;;
+	*c++) set -- c++ --target="${ZIG_TARGET}" "$@" ;;
+	esac
 
-    exec ${ZIG_EXE} "${@}"
-    ;;
+	exec ${ZIG_EXE} "${@}"
+	;;
 *)
-    if [ -h "$0" ]; then
-        exec "$(dirname "$0")/$(readlink "$0")" "$@"
-    fi
-    ;;
+	if test -h "$0"; then
+		exec "$(dirname "$0")/$(readlink "$0")" "$@"
+	fi
+	;;
 esac

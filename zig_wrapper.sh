@@ -5,7 +5,12 @@ PROGRAM="$(basename "$0")"
 ZIG_EXE=zig
 
 case "${PROGRAM}" in
-ar | *-ar) exec ${ZIG_EXE} ar "$@" ;;
+ar | *-ar)
+	case "${ZIG_TARGET:-}" in
+	*-macos* | *-maccatalyst* | *-darwin* | *-ios* | *-tvos* | *-watchos*)
+		exec ${ZIG_EXE} ar --format=darwin "$@" ;;
+	esac
+	exec ${ZIG_EXE} ar "$@" ;;
 dlltool | *-dlltool) exec ${ZIG_EXE} dlltool "$@" ;;
 lib | *-lib) exec ${ZIG_EXE} lib "$@" ;;
 ranlib | *-ranlib) exec ${ZIG_EXE} ranlib "$@" ;;

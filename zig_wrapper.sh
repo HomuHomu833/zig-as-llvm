@@ -12,26 +12,31 @@ ar | *-ar)
 	esac
 	exec ${ZIG_EXE} ar "$@" ;;
 dlltool | *-dlltool) exec ${ZIG_EXE} dlltool "$@" ;;
-lib | *-lib) exec ${ZIG_EXE} lib "$@" ;;
-ranlib | *-ranlib) exec ${ZIG_EXE} ranlib "$@" ;;
+lib | *-lib)         exec ${ZIG_EXE} lib "$@" ;;
+ranlib | *-ranlib)   exec ${ZIG_EXE} ranlib "$@" ;;
 objcopy | *-objcopy) exec ${ZIG_EXE} objcopy "$@" ;;
-ld.lld | *ld.lld | ld | *-ld) exec ${ZIG_EXE} ld.lld "$@" ;;
-rc) exec $ZIG_EXE rc "$@" ;;
+objdump | *-objdump) exec ${ZIG_EXE} objdump "$@" ;;
+rc | windres | *-rc | *-windres) exec ${ZIG_EXE} rc "$@" ;;
 strip | *-strip)
 	tmpfile="$1$(mktemp -d --dry-run .strip.XXXX)"
-	zig objcopy -S "$1" "${tmpfile}" || true
+	${ZIG_EXE} objcopy -S "$1" "${tmpfile}" || true
 	if [ $? -eq 0 ] && [ -s "${tmpfile}" ] && [ "$(file -b --mime-type "${tmpfile}")" = "application/x-executable" ]; then
-        	exec mv "${tmpfile}" "$1"
-        else
-                echo "WARNING: unable to strip $1"
+		exec mv "${tmpfile}" "$1"
+	else
+		echo "WARNING: unable to strip $1"
 		rm "${tmpfile}" || true
-        fi
+	fi
 	;;
-*cc | *c++)
+*cc | *c++ | *g++ | *clang | *clang++)
 	if ! test "${ZIG_TARGET+1}"; then
 		case "${PROGRAM}" in
-		cc | c++) ZIG_TARGET="$(uname -m)-linux-musl" ;;
-		*) ZIG_TARGET=$(echo "${PROGRAM}" | sed -E 's/(.+)(-cc|-c\+\+|-gcc|-g\+\+)/\1/') ;;
+		cc | c++ | gcc | g++ | clang | clang++) ;;  # leave unset as zig detects native target + libc
+		*-cc)      ZIG_TARGET="${PROGRAM%-cc}" ;;
+		*-gcc)     ZIG_TARGET="${PROGRAM%-gcc}" ;;
+		*-c++)     ZIG_TARGET="${PROGRAM%-c++}" ;;
+		*-g++)     ZIG_TARGET="${PROGRAM%-g++}" ;;
+		*-clang)   ZIG_TARGET="${PROGRAM%-clang}" ;;
+		*-clang++) ZIG_TARGET="${PROGRAM%-clang++}" ;;
 		esac
 	fi
 
@@ -41,17 +46,24 @@ strip | *-strip)
 	for argv in "$@"; do
 		case "${argv}" in
 		-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
-		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,) ;;
+		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) ;;
 		--target=*) ;;
 		*) set -- "$@" "${argv}" ;;
 		esac
 		shift
 	done
 
+	# Determine zig subcommand: c++ for anything that's a C++ compiler, cc otherwise
 	case "${PROGRAM}" in
-	*cc) set -- cc --target="${ZIG_TARGET}" "$@" ;;
-	*c++) set -- c++ --target="${ZIG_TARGET}" "$@" ;;
+	*c++ | *g++ | *clang++) ZIG_CMD=c++ ;;
+	*)                      ZIG_CMD=cc  ;;
 	esac
+
+	if [ -n "${ZIG_TARGET:-}" ]; then
+		set -- "${ZIG_CMD}" --target="${ZIG_TARGET}" "$@"
+	else
+		set -- "${ZIG_CMD}" "$@"
+	fi
 
 	exec ${ZIG_EXE} "${@}"
 	;;
@@ -59,5 +71,7 @@ strip | *-strip)
 	if test -h "$0"; then
 		exec "$(dirname "$0")/$(readlink "$0")" "$@"
 	fi
+	echo "ERROR: '${PROGRAM}' is not supported by this zig wrapper" >&2
+	exit 1
 	;;
 esac

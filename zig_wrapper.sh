@@ -46,7 +46,7 @@ strip | *-strip)
 	for argv in "$@"; do
 		case "${argv}" in
 		-Wp,-MD,*) set -- "$@" "-MD" "-MF" "$(echo "${argv}" | sed 's/^-Wp,-MD,//')" ;;
-		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,*) ;;
+		-Wl,--warn-common | -Wl,--verbose | -Wl,-Map,* | -Wl,-sectcreate,* | -Wl,-syslibroot,*) ;;
 		--target=*) ;;
 		*) set -- "$@" "${argv}" ;;
 		esac
